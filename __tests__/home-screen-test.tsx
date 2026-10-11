@@ -16,9 +16,16 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 1 foundation status line', async () => {
+  it('shows a Phase 2 state machine status line', async () => {
     const { getByText } = await render(<HomeScreen />);
 
-    expect(getByText(/phase 1 foundation ready/i)).toBeTruthy();
+    expect(getByText(/phase 2 state machine ready/i)).toBeTruthy();
+  });
+
+  it('shows the live game state from the store', async () => {
+    const { getByText } = await render(<HomeScreen />);
+
+    expect(getByText('State: IDLE')).toBeTruthy();
   });
 });
+

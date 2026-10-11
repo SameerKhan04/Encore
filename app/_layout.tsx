@@ -50,6 +50,10 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="debug-game"
+          options={{ title: 'Game State Debug' }}
+        />
       </Stack>
     </ThemeProvider>
   );
