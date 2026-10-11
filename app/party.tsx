@@ -1,9 +1,19 @@
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PhraseSelector } from '@/components/PhraseSelector';
 import { Screen } from '@/components/Screen';
+import { TranscriptReview } from '@/components/TranscriptReview';
 import { colors, spacing, typography } from '@/constants/theme';
+import type { AudioRecorder } from '@/services/audioRecorder';
+import {
+  createExpoAudioRecorder,
+  isNativeAudioAvailable,
+  requestAppMicrophonePermission,
+} from '@/services/expoAudio';
+import { hasGeminiApiKey, transcribe } from '@/services/transcription';
 import { useGameStore } from '@/store/gameStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 export default function PartyScreen() {
   const state = useGameStore((s) => s.state);
@@ -16,11 +26,79 @@ export default function PartyScreen() {
   const beginPreparing = useGameStore((s) => s.beginPreparing);
   const startSinging = useGameStore((s) => s.startSinging);
   const recordDemoPerformance = useGameStore((s) => s.recordDemoPerformance);
-  const beginWordSelection = useGameStore((s) => s.beginWordSelection);
+  const applyPerformanceTranscript = useGameStore(
+    (s) => s.applyPerformanceTranscript,
+  );
+  const confirmEditedTranscript = useGameStore((s) => s.confirmEditedTranscript);
   const passChallengeToOpponent = useGameStore((s) => s.passChallengeToOpponent);
   const handOffToOpponent = useGameStore((s) => s.handOffToOpponent);
   const completeMatch = useGameStore((s) => s.completeMatch);
   const reset = useGameStore((s) => s.reset);
+  const demoMode = usePreferencesStore((s) => s.demoMode);
+
+  const recorderRef = useRef<AudioRecorder | null>(null);
+  const [nativeReady, setNativeReady] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const geminiReady = hasGeminiApiKey();
+  const canRecordLive = !demoMode && nativeReady && geminiReady;
+
+  useEffect(() => {
+    if (!isNativeAudioAvailable()) {
+      setNativeReady(false);
+      return;
+    }
+    try {
+      recorderRef.current = createExpoAudioRecorder();
+      setNativeReady(true);
+    } catch {
+      setNativeReady(false);
+    }
+  }, []);
+
+  const startLiveRecording = async () => {
+    setError(null);
+    if (!recorderRef.current) {
+      setError('Microphone not ready.');
+      return;
+    }
+    const permission = await requestAppMicrophonePermission();
+    if (permission === 'denied') {
+      setError('Microphone permission denied.');
+      return;
+    }
+    try {
+      await recorderRef.current.start();
+      setRecording(true);
+    } catch {
+      setError("We couldn't start recording. Try again.");
+    }
+  };
+
+  const stopLiveRecording = async () => {
+    setError(null);
+    if (!recorderRef.current || processing) {
+      return;
+    }
+    // Keep the Stop button mounted until apply finishes — swapping it for
+    // Record mid-press can defer React state updates until the next tap.
+    setProcessing(true);
+    try {
+      const uri = await recorderRef.current.stop();
+      const result = await transcribe(uri, { demoMode: false });
+      applyPerformanceTranscript(result.words);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "We couldn't hear that clearly. Try again.";
+      setError(message);
+    } finally {
+      setRecording(false);
+      setProcessing(false);
+    }
+  };
 
   if (state === 'IDLE') {
     return (
@@ -83,28 +161,69 @@ export default function PartyScreen() {
         </Pressable>
       ) : null}
 
-      {state === 'PLAYER_SINGING' ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={recordDemoPerformance}
-          style={styles.primaryButton}
-        >
-          <Text style={styles.primaryButtonText}>Demo sing</Text>
-        </Pressable>
+      {state === 'PLAYER_SINGING' || state === 'PROCESSING_AUDIO' ? (
+        <View style={styles.block}>
+          {state === 'PROCESSING_AUDIO' || processing ? (
+            <Text style={styles.caption}>Transcribing with Gemini…</Text>
+          ) : null}
+          {canRecordLive ? (
+            recording || processing ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void stopLiveRecording();
+                }}
+                style={[styles.primaryButton, styles.stopButton]}
+                disabled={processing}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {processing ? 'Transcribing…' : 'Stop & transcribe'}
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void startLiveRecording();
+                }}
+                style={styles.primaryButton}
+              >
+                <Text style={styles.primaryButtonText}>Record & transcribe</Text>
+              </Pressable>
+            )
+          ) : (
+            <Text style={styles.caption}>
+              {demoMode
+                ? 'Demo Mode on — using mock lyrics.'
+                : !geminiReady
+                  ? 'Add EXPO_PUBLIC_GEMINI_API_KEY to .env, then reload.'
+                  : 'Mic unavailable — using mock lyrics.'}
+            </Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            onPress={recordDemoPerformance}
+            style={styles.secondaryButton}
+            disabled={recording || processing}
+          >
+            <Text style={styles.secondaryButtonText}>Demo sing (mock lyrics)</Text>
+          </Pressable>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </View>
       ) : null}
 
       {state === 'PERFORMANCE_VERIFIED' ? (
         <View style={styles.block}>
           <Text style={styles.verified}>Performance verified</Text>
           <Text style={styles.caption}>{`+${lastPoints} points`}</Text>
-          <Text style={styles.lyrics}>{transcriptWords.join(' ')}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={beginWordSelection}
-            style={styles.primaryButton}
-          >
-            <Text style={styles.primaryButtonText}>Pick challenge phrase</Text>
-          </Pressable>
+          <TranscriptReview
+            key={transcriptWords.join(' ')}
+            initialText={transcriptWords.join(' ')}
+            challengePhrase={challengePhrase}
+            onConfirm={(edited) => {
+              confirmEditedTranscript(edited);
+            }}
+          />
         </View>
       ) : null}
 
@@ -178,16 +297,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.accent,
   },
-  lyrics: {
-    fontSize: typography.body,
-    color: colors.text,
-    lineHeight: 22,
-  },
   primaryButton: {
     backgroundColor: colors.accent,
     paddingVertical: spacing.md,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  stopButton: {
+    backgroundColor: colors.danger,
   },
   primaryButtonText: {
     color: colors.background,
@@ -204,5 +321,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     fontSize: typography.body,
+  },
+  error: {
+    color: colors.danger,
+    fontSize: typography.caption,
   },
 });

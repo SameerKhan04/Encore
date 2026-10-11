@@ -32,7 +32,7 @@ describe('<PartyScreen />', () => {
       fireEvent.press(getByText("I'm ready"));
     });
     await act(async () => {
-      fireEvent.press(getByText('Demo sing'));
+      fireEvent.press(getByText('Demo sing (mock lyrics)'));
     });
 
     await waitFor(() => {
@@ -40,7 +40,7 @@ describe('<PartyScreen />', () => {
     });
 
     await act(async () => {
-      fireEvent.press(getByText('Pick challenge phrase'));
+      fireEvent.press(getByText('Confirm lyrics'));
     });
     await act(async () => {
       fireEvent.press(getByText('hold'));

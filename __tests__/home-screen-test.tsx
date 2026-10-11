@@ -21,10 +21,10 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 6 party loop status line', async () => {
+  it('shows a Phase 7 STT review status line', async () => {
     const { getByText } = await render(<HomeScreen />);
 
-    expect(getByText(/phase 6 party loop ready/i)).toBeTruthy();
+    expect(getByText(/phase 7 stt review ready/i)).toBeTruthy();
   });
 
   it('links to Word Selection', async () => {

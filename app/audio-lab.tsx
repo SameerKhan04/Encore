@@ -11,10 +11,8 @@ import {
   isNativeAudioAvailable,
   requestAppMicrophonePermission,
 } from '@/services/expoAudio';
-import {
-  MOCK_LYRIC_BLOCK,
-  mockTranscribe,
-} from '@/services/mockTranscription';
+import { MOCK_LYRIC_BLOCK } from '@/services/mockTranscription';
+import { hasGeminiApiKey, transcribe } from '@/services/transcription';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 type LabStatus = 'idle' | 'recording' | 'processing' | 'ready' | 'denied';
@@ -26,8 +24,10 @@ export default function AudioLabScreen() {
   const [status, setStatus] = useState<LabStatus>('idle');
   const [uri, setUri] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
+  const [source, setSource] = useState<'gemini' | 'mock' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nativeReady, setNativeReady] = useState(false);
+  const geminiReady = hasGeminiApiKey();
 
   useEffect(() => {
     if (!isNativeAudioAvailable()) {
@@ -73,20 +73,29 @@ export default function AudioLabScreen() {
   };
 
   const stopRecording = async () => {
+    if (status === 'processing') {
+      return;
+    }
     setError(null);
+    // Stay on the Stop control until transcription finishes — swapping to Start
+    // mid-press can defer setState until the next tap on RN.
+    setStatus('processing');
 
     try {
-      setStatus('processing');
       const recordingUri =
         demoMode || !recorderRef.current
           ? 'demo://mock-recording'
           : await recorderRef.current.stop();
+      const useMock = demoMode || !geminiReady;
+      const result = await transcribe(recordingUri, { demoMode: useMock });
       setUri(recordingUri);
-      const result = mockTranscribe(recordingUri);
       setTranscript(result.text);
+      setSource(useMock ? 'mock' : 'gemini');
       setStatus('ready');
-    } catch {
-      setError("We couldn't hear that clearly. Try again.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "We couldn't hear that clearly. Try again.";
+      setError(message);
       setStatus('idle');
     }
   };
@@ -99,24 +108,33 @@ export default function AudioLabScreen() {
     <Screen style={styles.screen}>
       <Text style={styles.title}>Audio Lab</Text>
       <Text style={styles.caption}>
-        Phase 4 — mic capture + mock transcription
+        Mic capture + Gemini transcription (mock when Demo Mode / no key)
       </Text>
       {demoMode ? (
         <Text style={styles.badge}>Demo/Mock Mode</Text>
+      ) : null}
+      {!demoMode && !geminiReady ? (
+        <Text style={styles.badge}>No Gemini key — using mock</Text>
+      ) : null}
+      {!demoMode && geminiReady ? (
+        <Text style={styles.badgeReady}>Gemini key loaded</Text>
       ) : null}
 
       <Text style={styles.status}>{`Status: ${status}`}</Text>
 
       <View style={styles.actions}>
-        {status === 'recording' ? (
+        {status === 'recording' || status === 'processing' ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => {
               void stopRecording();
             }}
             style={[styles.button, styles.stopButton]}
+            disabled={status === 'processing'}
           >
-            <Text style={styles.buttonText}>Stop recording</Text>
+            <Text style={styles.buttonText}>
+              {status === 'processing' ? 'Transcribing…' : 'Stop recording'}
+            </Text>
           </Pressable>
         ) : (
           <Pressable
@@ -125,7 +143,6 @@ export default function AudioLabScreen() {
               void startRecording();
             }}
             style={styles.button}
-            disabled={status === 'processing'}
           >
             <Text style={styles.buttonText}>Start recording</Text>
           </Pressable>
@@ -136,7 +153,9 @@ export default function AudioLabScreen() {
       {uri ? <Text style={styles.meta}>{`URI: ${uri}`}</Text> : null}
       {transcript ? (
         <View style={styles.transcriptBox}>
-          <Text style={styles.label}>Mock transcript</Text>
+          <Text style={styles.label}>
+            {source === 'gemini' ? 'Gemini transcript' : 'Mock transcript'}
+          </Text>
           <Text style={styles.transcript}>{transcript}</Text>
           <Link href="/word-selection" asChild>
             <Pressable accessibilityRole="button" style={styles.button}>
@@ -153,7 +172,7 @@ export default function AudioLabScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    justifyContent: 'center',
+    paddingTop: spacing.lg,
     gap: spacing.md,
   },
   title: {
@@ -166,6 +185,17 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    color: colors.accent,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 6,
+    fontSize: typography.caption,
+    fontWeight: '600',
+  },
+  badgeReady: {
     alignSelf: 'flex-start',
     backgroundColor: colors.surface,
     color: colors.accent,

@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 import { mockTranscribe } from '@/services/mockTranscription';
+import {
+  containsChallengePhrase,
+  wordsFromText,
+} from '@/services/transcription';
 
 export type GameState =
   | 'IDLE'
@@ -84,6 +88,8 @@ type GameStore = {
   completeMatch: () => boolean;
   startPartyMatch: () => void;
   recordDemoPerformance: () => boolean;
+  applyPerformanceTranscript: (words: string[]) => boolean;
+  confirmEditedTranscript: (editedText: string) => boolean;
   passChallengeToOpponent: (phrase: string, multiplier: number) => boolean;
   handOffToOpponent: () => boolean;
 };
@@ -126,18 +132,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   recordDemoPerformance: () => {
+    return get().applyPerformanceTranscript(mockTranscribe().words);
+  },
+
+  applyPerformanceTranscript: (words) => {
     if (get().state !== 'PLAYER_SINGING') {
       return false;
     }
     if (!get().finishSinging()) {
       return false;
     }
-    const words = mockTranscribe().words;
     set({
       transcriptWords: words,
       lastPoints: BASE_POINTS,
     });
     return get().verifyPerformance();
+  },
+
+  confirmEditedTranscript: (editedText) => {
+    if (get().state !== 'PERFORMANCE_VERIFIED') {
+      return false;
+    }
+    if (!containsChallengePhrase(editedText, get().challengePhrase)) {
+      return false;
+    }
+    set({ transcriptWords: wordsFromText(editedText) });
+    return get().beginWordSelection();
   },
 
   passChallengeToOpponent: (phrase, multiplier) => {

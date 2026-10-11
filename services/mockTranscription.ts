@@ -1,6 +1,6 @@
 /** Hardcoded lyric block for offline STT stubbing (Phase 4–7). */
 export const MOCK_LYRIC_BLOCK =
-  'I want to hold your hand forever and never let go tonight';
+  'I want to hold your hand forever with love and never let go tonight';
 
 export type TranscriptionResult = {
   text: string;

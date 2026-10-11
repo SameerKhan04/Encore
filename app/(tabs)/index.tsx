@@ -16,7 +16,7 @@ export default function HomeScreen() {
     <Screen style={styles.screen}>
       <Text style={styles.brand}>{brand.name}</Text>
       <Text style={styles.tagline}>{brand.tagline}</Text>
-      <Text style={styles.status}>Phase 6 party loop ready</Text>
+      <Text style={styles.status}>Phase 7 STT review ready</Text>
       <Text style={styles.stateLine}>{`State: ${state}`}</Text>
 
       <View style={styles.actions}>
