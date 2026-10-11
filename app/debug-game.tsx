@@ -1,11 +1,6 @@
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Screen } from '@/components/Screen';
 import { colors, spacing, typography } from '@/constants/theme';
 import { GAME_STATES, useGameStore } from '@/store/gameStore';
 
@@ -15,6 +10,7 @@ export default function DebugGameScreen() {
   const reset = useGameStore((s) => s.reset);
 
   return (
+    <Screen style={styles.screen}>
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Game State Debug</Text>
       <Text style={styles.stateLabel} testID="game-state-label">
@@ -45,10 +41,14 @@ export default function DebugGameScreen() {
         ))}
       </View>
     </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    paddingHorizontal: 0,
+  },
   container: {
     padding: spacing.lg,
     backgroundColor: colors.background,

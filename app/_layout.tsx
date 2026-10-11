@@ -2,9 +2,11 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { colors } from '@/constants/theme';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -46,15 +48,27 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        <Stack.Screen
-          name="debug-game"
-          options={{ title: 'Game State Debug' }}
-        />
-      </Stack>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="onboarding"
+            options={{ title: 'How to play', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="debug-game"
+            options={{ title: 'Game State Debug' }}
+          />
+        </Stack>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

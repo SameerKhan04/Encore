@@ -1,34 +1,60 @@
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Screen } from '@/components/Screen';
 import { brand, colors, spacing, typography } from '@/constants/theme';
 import { useGameStore } from '@/store/gameStore';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
 export default function HomeScreen() {
   const state = useGameStore((s) => s.state);
+  const hasCompletedOnboarding = usePreferencesStore(
+    (s) => s.hasCompletedOnboarding,
+  );
 
   return (
-    <View style={styles.container} testID="home-shell">
+    <Screen style={styles.screen}>
       <Text style={styles.brand}>{brand.name}</Text>
       <Text style={styles.tagline}>{brand.tagline}</Text>
-      <Text style={styles.status}>Phase 2 state machine ready</Text>
-      <Text style={styles.stateLine}>State: {state}</Text>
-      <Link href="/debug-game" asChild>
-        <Pressable accessibilityRole="button" style={styles.debugButton}>
-          <Text style={styles.debugButtonText}>Open state debug</Text>
+      <Text style={styles.status}>Phase 3 UI shell ready</Text>
+      <Text style={styles.stateLine}>{`State: ${state}`}</Text>
+
+      <View style={styles.actions}>
+        <Pressable accessibilityRole="button" style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Party Mode</Text>
         </Pressable>
-      </Link>
-    </View>
+
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.secondaryButton, styles.disabledButton]}
+          disabled
+        >
+          <Text style={styles.secondaryButtonText}>Online Match</Text>
+          <Text style={styles.caption}>Coming in Phase 7</Text>
+        </Pressable>
+
+        {!hasCompletedOnboarding ? (
+          <Link href="/onboarding" asChild>
+            <Pressable accessibilityRole="button" style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>How to play</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+
+        <Link href="/debug-game" asChild>
+          <Pressable accessibilityRole="button" style={styles.ghostButton}>
+            <Text style={styles.ghostButtonText}>Open state debug</Text>
+          </Pressable>
+        </Link>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  screen: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
   },
   brand: {
     fontSize: typography.brand,
@@ -53,14 +79,46 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginBottom: spacing.lg,
   },
-  debugButton: {
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 8,
+  actions: {
+    width: '100%',
+    gap: spacing.sm,
   },
-  debugButtonText: {
+  primaryButton: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: colors.background,
+    fontSize: typography.body,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  secondaryButtonText: {
     color: colors.text,
     fontSize: typography.body,
+    fontWeight: '600',
+  },
+  caption: {
+    marginTop: spacing.xs,
+    fontSize: typography.caption,
+    color: colors.textMuted,
+  },
+  ghostButton: {
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  ghostButtonText: {
+    color: colors.textMuted,
+    fontSize: typography.caption,
   },
 });
