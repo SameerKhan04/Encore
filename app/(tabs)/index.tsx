@@ -16,13 +16,15 @@ export default function HomeScreen() {
     <Screen style={styles.screen}>
       <Text style={styles.brand}>{brand.name}</Text>
       <Text style={styles.tagline}>{brand.tagline}</Text>
-      <Text style={styles.status}>Phase 3 UI shell ready</Text>
+      <Text style={styles.status}>Phase 4 audio + mocks ready</Text>
       <Text style={styles.stateLine}>{`State: ${state}`}</Text>
 
       <View style={styles.actions}>
-        <Pressable accessibilityRole="button" style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Party Mode</Text>
-        </Pressable>
+        <Link href="/audio-lab" asChild>
+          <Pressable accessibilityRole="button" style={styles.primaryButton}>
+            <Text style={styles.primaryButtonText}>Party Mode</Text>
+          </Pressable>
+        </Link>
 
         <Pressable
           accessibilityRole="button"

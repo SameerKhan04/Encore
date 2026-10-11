@@ -64,6 +64,10 @@ function RootLayoutNav() {
             options={{ title: 'How to play', presentation: 'modal' }}
           />
           <Stack.Screen
+            name="audio-lab"
+            options={{ title: 'Audio Lab' }}
+          />
+          <Stack.Screen
             name="debug-game"
             options={{ title: 'Game State Debug' }}
           />

@@ -21,10 +21,10 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 3 UI shell status line', async () => {
+  it('shows a Phase 4 audio status line', async () => {
     const { getByText } = await render(<HomeScreen />);
 
-    expect(getByText(/phase 3 ui shell ready/i)).toBeTruthy();
+    expect(getByText(/phase 4 audio \+ mocks ready/i)).toBeTruthy();
   });
 
   it('shows the live game state from the store', async () => {

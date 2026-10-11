@@ -5,8 +5,8 @@ describe('Phase 1 dependencies', () => {
     expect(packageJson.dependencies.zustand).toBeDefined();
   });
 
-  it('lists expo-av for recording and playback', () => {
-    expect(packageJson.dependencies['expo-av']).toBeDefined();
+  it('lists expo-audio for recording and playback', () => {
+    expect(packageJson.dependencies['expo-audio']).toBeDefined();
   });
 
   it('lists expo-haptics for tactile feedback', () => {

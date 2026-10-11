@@ -4,14 +4,17 @@ const DEFAULTS = {
   hapticsEnabled: true,
   volume: 1,
   hasCompletedOnboarding: false,
+  demoMode: false,
 } as const;
 
 type PreferencesStore = {
   hapticsEnabled: boolean;
   volume: number;
   hasCompletedOnboarding: boolean;
+  demoMode: boolean;
   setHapticsEnabled: (enabled: boolean) => void;
   setVolume: (volume: number) => void;
+  setDemoMode: (enabled: boolean) => void;
   completeOnboarding: () => void;
   clearCache: () => void;
 };
@@ -28,6 +31,8 @@ export const usePreferencesStore = create<PreferencesStore>((set) => ({
   setHapticsEnabled: (enabled) => set({ hapticsEnabled: enabled }),
 
   setVolume: (volume) => set({ volume: clampVolume(volume) }),
+
+  setDemoMode: (enabled) => set({ demoMode: enabled }),
 
   completeOnboarding: () => set({ hasCompletedOnboarding: true }),
 

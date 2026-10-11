@@ -5,12 +5,18 @@ describe('preferences store', () => {
     usePreferencesStore.getState().clearCache();
   });
 
-  it('defaults haptics on, full volume, and onboarding incomplete', () => {
+  it('defaults haptics on, full volume, onboarding incomplete, demo off', () => {
     const prefs = usePreferencesStore.getState();
 
     expect(prefs.hapticsEnabled).toBe(true);
     expect(prefs.volume).toBe(1);
     expect(prefs.hasCompletedOnboarding).toBe(false);
+    expect(prefs.demoMode).toBe(false);
+  });
+
+  it('enables demo mode for mic-denied fallback', () => {
+    usePreferencesStore.getState().setDemoMode(true);
+    expect(usePreferencesStore.getState().demoMode).toBe(true);
   });
 
   it('toggles haptics', () => {
@@ -37,10 +43,11 @@ describe('preferences store', () => {
     expect(usePreferencesStore.getState().hasCompletedOnboarding).toBe(true);
   });
 
-  it('clearCache restores defaults including onboarding', () => {
+  it('clearCache restores defaults including onboarding and demo mode', () => {
     usePreferencesStore.getState().setHapticsEnabled(false);
     usePreferencesStore.getState().setVolume(0.2);
     usePreferencesStore.getState().completeOnboarding();
+    usePreferencesStore.getState().setDemoMode(true);
 
     usePreferencesStore.getState().clearCache();
 
@@ -48,5 +55,6 @@ describe('preferences store', () => {
     expect(prefs.hapticsEnabled).toBe(true);
     expect(prefs.volume).toBe(1);
     expect(prefs.hasCompletedOnboarding).toBe(false);
+    expect(prefs.demoMode).toBe(false);
   });
 });
