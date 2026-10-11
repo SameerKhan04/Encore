@@ -21,10 +21,10 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 5 phrase engine status line', async () => {
+  it('shows a Phase 6 party loop status line', async () => {
     const { getByText } = await render(<HomeScreen />);
 
-    expect(getByText(/phase 5 phrase engine ready/i)).toBeTruthy();
+    expect(getByText(/phase 6 party loop ready/i)).toBeTruthy();
   });
 
   it('links to Word Selection', async () => {

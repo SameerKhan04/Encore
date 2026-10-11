@@ -16,11 +16,11 @@ export default function HomeScreen() {
     <Screen style={styles.screen}>
       <Text style={styles.brand}>{brand.name}</Text>
       <Text style={styles.tagline}>{brand.tagline}</Text>
-      <Text style={styles.status}>Phase 5 phrase engine ready</Text>
+      <Text style={styles.status}>Phase 6 party loop ready</Text>
       <Text style={styles.stateLine}>{`State: ${state}`}</Text>
 
       <View style={styles.actions}>
-        <Link href="/audio-lab" asChild>
+        <Link href="/party" asChild>
           <Pressable accessibilityRole="button" style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>Party Mode</Text>
           </Pressable>

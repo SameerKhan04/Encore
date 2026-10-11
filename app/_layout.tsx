@@ -63,6 +63,7 @@ function RootLayoutNav() {
             name="onboarding"
             options={{ title: 'How to play', presentation: 'modal' }}
           />
+          <Stack.Screen name="party" options={{ title: 'Party Mode' }} />
           <Stack.Screen
             name="audio-lab"
             options={{ title: 'Audio Lab' }}
