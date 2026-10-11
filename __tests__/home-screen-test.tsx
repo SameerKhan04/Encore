@@ -21,10 +21,16 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 4 audio status line', async () => {
+  it('shows a Phase 5 phrase engine status line', async () => {
     const { getByText } = await render(<HomeScreen />);
 
-    expect(getByText(/phase 4 audio \+ mocks ready/i)).toBeTruthy();
+    expect(getByText(/phase 5 phrase engine ready/i)).toBeTruthy();
+  });
+
+  it('links to Word Selection', async () => {
+    const { getByText } = await render(<HomeScreen />);
+
+    expect(getByText('Word Selection')).toBeTruthy();
   });
 
   it('shows the live game state from the store', async () => {

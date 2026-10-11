@@ -68,6 +68,10 @@ function RootLayoutNav() {
             options={{ title: 'Audio Lab' }}
           />
           <Stack.Screen
+            name="word-selection"
+            options={{ title: 'Word Selection' }}
+          />
+          <Stack.Screen
             name="debug-game"
             options={{ title: 'Game State Debug' }}
           />

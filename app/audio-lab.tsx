@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -137,6 +138,11 @@ export default function AudioLabScreen() {
         <View style={styles.transcriptBox}>
           <Text style={styles.label}>Mock transcript</Text>
           <Text style={styles.transcript}>{transcript}</Text>
+          <Link href="/word-selection" asChild>
+            <Pressable accessibilityRole="button" style={styles.button}>
+              <Text style={styles.buttonText}>Select challenge phrase</Text>
+            </Pressable>
+          </Link>
         </View>
       ) : (
         <Text style={styles.meta}>Expected mock lyrics: {MOCK_LYRIC_BLOCK}</Text>
