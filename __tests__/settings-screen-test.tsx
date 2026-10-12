@@ -18,6 +18,13 @@ describe('<SettingsScreen />', () => {
     expect(getByText('Clear cache')).toBeTruthy();
   });
 
+  it('shows the app version without phase-shell chrome', async () => {
+    const { getByText, queryByText } = await render(<SettingsScreen />);
+
+    expect(getByText(/Version 1\.0\.0/i)).toBeTruthy();
+    expect(queryByText(/phase 3/i)).toBeNull();
+  });
+
   it('toggles haptics from the switch control', async () => {
     const { getByLabelText } = await render(<SettingsScreen />);
 

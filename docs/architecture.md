@@ -72,7 +72,7 @@ Game rounds will likely be stack screens or modal flows launched from Home, not 
 
 Zustand owns the **game state machine**: lobby → record → pass → challenge → score / next round → end. Audio URIs and round metadata stay in that store (or a thin companion module). Settings (haptics on/off, etc.) are separate and can use AsyncStorage later; they are not required for Phase 2 MVP.
 
-No backend, auth, or multiplayer networking in the current architecture.
+Online Match uses Supabase for room snapshots and voice signaling (`encore_matches`, `encore_voice_signals`). Live hear/talk uses WebRTC peer media (`services/matchVoice.ts`); Expo Go cannot load it — use an EAS development or production build.
 
 ## UI system
 

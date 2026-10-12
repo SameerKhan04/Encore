@@ -1,13 +1,26 @@
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { colors, spacing, typography } from '@/constants/theme';
+import { areLabRoutesEnabled } from '@/services/labRoutes';
 import { GAME_STATES, useGameStore } from '@/store/gameStore';
 
 export default function DebugGameScreen() {
   const state = useGameStore((s) => s.state);
   const forceState = useGameStore((s) => s.forceState);
   const reset = useGameStore((s) => s.reset);
+
+  useEffect(() => {
+    if (!areLabRoutesEnabled()) {
+      router.replace('/(tabs)');
+    }
+  }, []);
+
+  if (!areLabRoutesEnabled()) {
+    return null;
+  }
 
   return (
     <Screen style={styles.screen}>

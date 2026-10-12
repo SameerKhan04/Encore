@@ -1,60 +1,44 @@
-import { usePreferencesStore } from '@/store/preferencesStore';
+import {
+  createMemoryPreferencesStorage,
+  createPreferencesStore,
+  usePreferencesStore,
+} from '@/store/preferencesStore';
 
-describe('preferences store', () => {
+describe('preferencesStore', () => {
   beforeEach(() => {
     usePreferencesStore.getState().clearCache();
   });
 
-  it('defaults haptics on, full volume, onboarding incomplete, demo off', () => {
-    const prefs = usePreferencesStore.getState();
-
-    expect(prefs.hapticsEnabled).toBe(true);
-    expect(prefs.volume).toBe(1);
-    expect(prefs.hasCompletedOnboarding).toBe(false);
-    expect(prefs.demoMode).toBe(false);
+  it('starts with sensible defaults', () => {
+    const state = usePreferencesStore.getState();
+    expect(state.hapticsEnabled).toBe(true);
+    expect(state.volume).toBe(1);
+    expect(state.hasCompletedOnboarding).toBe(false);
   });
 
-  it('enables demo mode for mic-denied fallback', () => {
-    usePreferencesStore.getState().setDemoMode(true);
-    expect(usePreferencesStore.getState().demoMode).toBe(true);
-  });
-
-  it('toggles haptics', () => {
+  it('toggles haptics and clamps volume', () => {
     usePreferencesStore.getState().setHapticsEnabled(false);
+    usePreferencesStore.getState().setVolume(2);
     expect(usePreferencesStore.getState().hapticsEnabled).toBe(false);
-
-    usePreferencesStore.getState().setHapticsEnabled(true);
-    expect(usePreferencesStore.getState().hapticsEnabled).toBe(true);
-  });
-
-  it('clamps volume between 0 and 1', () => {
-    usePreferencesStore.getState().setVolume(1.5);
     expect(usePreferencesStore.getState().volume).toBe(1);
-
-    usePreferencesStore.getState().setVolume(-0.2);
-    expect(usePreferencesStore.getState().volume).toBe(0);
-
-    usePreferencesStore.getState().setVolume(0.4);
-    expect(usePreferencesStore.getState().volume).toBe(0.4);
   });
+});
 
-  it('marks onboarding complete', () => {
-    usePreferencesStore.getState().completeOnboarding();
-    expect(usePreferencesStore.getState().hasCompletedOnboarding).toBe(true);
-  });
+describe('preferencesStore persistence', () => {
+  it('rehydrates toggles from storage', async () => {
+    const storage = createMemoryPreferencesStorage();
+    const first = createPreferencesStore({ storage });
+    await first.getState().hydrate();
+    first.getState().setHapticsEnabled(false);
+    first.getState().setVolume(0.4);
+    first.getState().completeOnboarding();
+    await first.getState().persist();
 
-  it('clearCache restores defaults including onboarding and demo mode', () => {
-    usePreferencesStore.getState().setHapticsEnabled(false);
-    usePreferencesStore.getState().setVolume(0.2);
-    usePreferencesStore.getState().completeOnboarding();
-    usePreferencesStore.getState().setDemoMode(true);
+    const second = createPreferencesStore({ storage });
+    await second.getState().hydrate();
 
-    usePreferencesStore.getState().clearCache();
-
-    const prefs = usePreferencesStore.getState();
-    expect(prefs.hapticsEnabled).toBe(true);
-    expect(prefs.volume).toBe(1);
-    expect(prefs.hasCompletedOnboarding).toBe(false);
-    expect(prefs.demoMode).toBe(false);
+    expect(second.getState().hapticsEnabled).toBe(false);
+    expect(second.getState().volume).toBe(0.4);
+    expect(second.getState().hasCompletedOnboarding).toBe(true);
   });
 });

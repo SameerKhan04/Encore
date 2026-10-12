@@ -35,14 +35,38 @@ function normalizePhrase(value: string): string {
     .trim();
 }
 
+/** Whole-word match: challenge may appear anywhere in the transcript. */
+export function containsChallengeWord(
+  text: string,
+  challengeWord: string,
+): boolean {
+  const target = normalizePhrase(challengeWord);
+  if (!target || target.includes(' ')) {
+    return false;
+  }
+  const tokens = normalizePhrase(text).split(' ').filter(Boolean);
+  return tokens.includes(target);
+}
+
 export function containsChallengePhrase(
   text: string,
   challengePhrase: string,
 ): boolean {
-  if (!challengePhrase.trim()) {
+  const phrase = normalizePhrase(challengePhrase);
+  if (!phrase) {
     return false;
   }
-  return normalizePhrase(text).includes(normalizePhrase(challengePhrase));
+  const phraseTokens = phrase.split(' ').filter(Boolean);
+  if (phraseTokens.length === 1) {
+    return containsChallengeWord(text, phrase);
+  }
+  const tokens = normalizePhrase(text).split(' ').filter(Boolean);
+  for (let i = 0; i <= tokens.length - phraseTokens.length; i += 1) {
+    if (phraseTokens.every((token, j) => tokens[i + j] === token)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getConfiguredApiKey(explicit?: string): string {

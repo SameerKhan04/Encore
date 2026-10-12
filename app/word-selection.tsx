@@ -1,39 +1,34 @@
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { PhraseSelector, type PassedChallenge } from '@/components/PhraseSelector';
 import { Screen } from '@/components/Screen';
+import { WordPicker } from '@/components/WordPicker';
 import { colors, spacing, typography } from '@/constants/theme';
 import { mockTranscribe } from '@/services/mockTranscription';
 import { useGameStore } from '@/store/gameStore';
 
 export default function WordSelectionScreen() {
-  const sendChallenge = useGameStore((s) => s.sendChallenge);
-  const forceState = useGameStore((s) => s.forceState);
-  const state = useGameStore((s) => s.state);
+  const opponentSelectWord = useGameStore((s) => s.opponentSelectWord);
   const words = mockTranscribe().words;
-  const [passed, setPassed] = useState<PassedChallenge | null>(null);
+  const [passed, setPassed] = useState<string | null>(null);
 
-  const onPassChallenge = (challenge: PassedChallenge) => {
-    setPassed(challenge);
-    if (state !== 'WORD_SELECTION') {
-      forceState('WORD_SELECTION');
-    }
-    sendChallenge();
+  const onSelectWord = (word: string) => {
+    setPassed(word);
+    opponentSelectWord(word);
   };
 
   return (
     <Screen style={styles.screen}>
       <Text style={styles.title}>Pick their next challenge</Text>
       <Text style={styles.caption}>
-        Phase 5 — consecutive phrase selection
+        Opponent picks one word — it can appear anywhere in the next lyrics.
       </Text>
 
-      <PhraseSelector words={words} onPassChallenge={onPassChallenge} />
+      <WordPicker words={words} onSelectWord={onSelectWord} />
 
       {passed ? (
         <Text testID="passed-challenge" style={styles.passed}>
-          {passed.phrase}
+          {passed}
         </Text>
       ) : null}
     </Screen>

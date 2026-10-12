@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -11,6 +11,7 @@ import {
   isNativeAudioAvailable,
   requestAppMicrophonePermission,
 } from '@/services/expoAudio';
+import { areLabRoutesEnabled } from '@/services/labRoutes';
 import { MOCK_LYRIC_BLOCK } from '@/services/mockTranscription';
 import { hasGeminiApiKey, transcribe } from '@/services/transcription';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -28,8 +29,18 @@ export default function AudioLabScreen() {
   const [error, setError] = useState<string | null>(null);
   const [nativeReady, setNativeReady] = useState(false);
   const geminiReady = hasGeminiApiKey();
+  const labEnabled = areLabRoutesEnabled();
 
   useEffect(() => {
+    if (!labEnabled) {
+      router.replace('/(tabs)');
+    }
+  }, [labEnabled]);
+
+  useEffect(() => {
+    if (!labEnabled) {
+      return;
+    }
     if (!isNativeAudioAvailable()) {
       setDemoMode(true);
       setNativeReady(false);
@@ -43,11 +54,15 @@ export default function AudioLabScreen() {
       setDemoMode(true);
       setNativeReady(false);
     }
-  }, [setDemoMode]);
+  }, [labEnabled, setDemoMode]);
 
   const openSettings = useCallback(() => {
     void Linking.openSettings();
   }, []);
+
+  if (!labEnabled) {
+    return null;
+  }
 
   const startRecording = async () => {
     setError(null);

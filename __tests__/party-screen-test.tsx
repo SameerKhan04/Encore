@@ -32,6 +32,12 @@ describe('<PartyScreen />', () => {
       fireEvent.press(getByText("I'm ready"));
     });
     await act(async () => {
+      fireEvent.press(getByText('Start singing'));
+    });
+    await act(async () => {
+      useGameStore.getState().startTimedSinging(Date.now());
+    });
+    await act(async () => {
       fireEvent.press(getByText('Demo sing (mock lyrics)'));
     });
 
@@ -43,23 +49,17 @@ describe('<PartyScreen />', () => {
       fireEvent.press(getByText('Confirm lyrics'));
     });
     await act(async () => {
-      fireEvent.press(getByText('hold'));
+      fireEvent.press(getByText('forever'));
     });
     await act(async () => {
-      fireEvent.press(getByText('your'));
-    });
-    await act(async () => {
-      fireEvent.press(getByText('Pass Challenge'));
-    });
-    await act(async () => {
-      fireEvent.press(getByText('Hand device to opponent'));
+      fireEvent.press(getByText('Send challenge'));
     });
 
     await waitFor(() => {
       expect(useGameStore.getState().activePlayer).toBe('B');
-      expect(useGameStore.getState().challengePhrase).toBe('hold your');
+      expect(useGameStore.getState().challengePhrase).toBe('forever');
       expect(getByTestId('active-player')).toHaveTextContent('Player B');
-      expect(getByText(/Challenge:\s*hold your/i)).toBeTruthy();
+      expect(getByText(/Challenge:\s*forever/i)).toBeTruthy();
     });
   });
 

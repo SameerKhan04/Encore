@@ -8,9 +8,14 @@ describe('<WordSelectionScreen />', () => {
   beforeEach(() => {
     useGameStore.getState().reset();
     useGameStore.getState().forceState('WORD_SELECTION');
+    useGameStore.setState({
+      activePlayer: 'A',
+      pickingPlayer: 'B',
+      transcriptWords: mockTranscribe().words,
+    });
   });
 
-  it('shows the mock transcript for phrase picking', async () => {
+  it('shows the mock transcript for single-word picking', async () => {
     const { getByText } = await render(<WordSelectionScreen />);
     const words = mockTranscribe().words;
 
@@ -18,22 +23,20 @@ describe('<WordSelectionScreen />', () => {
     expect(getByText(words[words.length - 1])).toBeTruthy();
   });
 
-  it('passes the challenge into CHALLENGE_SENT with the selected phrase', async () => {
+  it('sends one challenge word and hands off to the opponent', async () => {
     const { getByText, getByTestId } = await render(<WordSelectionScreen />);
 
     await act(async () => {
       fireEvent.press(getByText('want'));
     });
     await act(async () => {
-      fireEvent.press(getByText('to'));
-    });
-    await act(async () => {
-      fireEvent.press(getByText('Pass Challenge'));
+      fireEvent.press(getByText('Send challenge'));
     });
 
     await waitFor(() => {
-      expect(useGameStore.getState().state).toBe('CHALLENGE_SENT');
-      expect(getByTestId('passed-challenge')).toHaveTextContent('want to');
+      expect(useGameStore.getState().challengePhrase).toBe('want');
+      expect(useGameStore.getState().activePlayer).toBe('B');
+      expect(getByTestId('passed-challenge')).toHaveTextContent('want');
     });
   });
 });

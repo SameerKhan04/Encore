@@ -3,6 +3,7 @@ import {
   GEMINI_STT_FALLBACK_MODEL,
   GEMINI_STT_MODEL,
   containsChallengePhrase,
+  containsChallengeWord,
   transcribe,
   wordsFromText,
 } from '@/services/transcription';
@@ -26,6 +27,18 @@ describe('containsChallengePhrase', () => {
 
   it('returns false when the challenge is missing', () => {
     expect(containsChallengePhrase('hello world', 'love')).toBe(false);
+  });
+
+  it('does not match a single-word challenge as a substring', () => {
+    expect(containsChallengePhrase('gloves on sale', 'love')).toBe(false);
+  });
+});
+
+describe('containsChallengeWord', () => {
+  it('matches a whole word anywhere in the transcript', () => {
+    expect(containsChallengeWord('all you need is love tonight', 'love')).toBe(
+      true,
+    );
   });
 });
 

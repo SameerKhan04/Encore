@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { PhraseSelector } from '@/components/PhraseSelector';
 import { Screen } from '@/components/Screen';
 import { TranscriptReview } from '@/components/TranscriptReview';
+import {
+  TurnTimers,
+  remainingMs,
+  shouldShowSingTimer,
+} from '@/components/TurnTimers';
+import { WordPicker } from '@/components/WordPicker';
 import { colors, spacing, typography } from '@/constants/theme';
 import type { AudioRecorder } from '@/services/audioRecorder';
 import {
@@ -12,7 +17,12 @@ import {
   requestAppMicrophonePermission,
 } from '@/services/expoAudio';
 import { hasGeminiApiKey, transcribe } from '@/services/transcription';
-import { useGameStore } from '@/store/gameStore';
+import { canStopSingRecording } from '@/services/singRecording';
+import {
+  SING_MAX_MS,
+  SING_MIN_MS,
+  useGameStore,
+} from '@/store/gameStore';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 export default function PartyScreen() {
@@ -22,27 +32,37 @@ export default function PartyScreen() {
   const transcriptWords = useGameStore((s) => s.transcriptWords);
   const scores = useGameStore((s) => s.scores);
   const lastPoints = useGameStore((s) => s.lastPoints);
+  const thinkDeadlineAt = useGameStore((s) => s.thinkDeadlineAt);
+  const countdownEndsAt = useGameStore((s) => s.countdownEndsAt);
+  const singStartedAt = useGameStore((s) => s.singStartedAt);
   const startPartyMatch = useGameStore((s) => s.startPartyMatch);
-  const beginPreparing = useGameStore((s) => s.beginPreparing);
-  const startSinging = useGameStore((s) => s.startSinging);
+  const beginThinkPhase = useGameStore((s) => s.beginThinkPhase);
+  const beginCountdown = useGameStore((s) => s.beginCountdown);
+  const failThinkTimeout = useGameStore((s) => s.failThinkTimeout);
   const recordDemoPerformance = useGameStore((s) => s.recordDemoPerformance);
   const applyPerformanceTranscript = useGameStore(
     (s) => s.applyPerformanceTranscript,
   );
   const confirmEditedTranscript = useGameStore((s) => s.confirmEditedTranscript);
-  const passChallengeToOpponent = useGameStore((s) => s.passChallengeToOpponent);
+  const opponentSelectWord = useGameStore((s) => s.opponentSelectWord);
   const handOffToOpponent = useGameStore((s) => s.handOffToOpponent);
   const completeMatch = useGameStore((s) => s.completeMatch);
   const reset = useGameStore((s) => s.reset);
   const demoMode = usePreferencesStore((s) => s.demoMode);
 
   const recorderRef = useRef<AudioRecorder | null>(null);
+  const maxStopFiredRef = useRef(false);
   const [nativeReady, setNativeReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const geminiReady = hasGeminiApiKey();
   const canRecordLive = !demoMode && nativeReady && geminiReady;
+  const canStop = canStopSingRecording({
+    singStartedAt,
+    now,
+  });
 
   useEffect(() => {
     if (!isNativeAudioAvailable()) {
@@ -55,6 +75,25 @@ export default function PartyScreen() {
     } catch {
       setNativeReady(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const tick = Date.now();
+      setNow(tick);
+      const game = useGameStore.getState();
+      if (game.state === 'PLAYER_PREPARING') {
+        game.failThinkTimeout(tick);
+      } else if (
+        game.state === 'PLAYER_COUNTDOWN' &&
+        game.countdownEndsAt != null &&
+        tick >= game.countdownEndsAt
+      ) {
+        maxStopFiredRef.current = false;
+        game.startTimedSinging(tick);
+      }
+    }, 250);
+    return () => clearInterval(id);
   }, []);
 
   const startLiveRecording = async () => {
@@ -99,6 +138,36 @@ export default function PartyScreen() {
       setProcessing(false);
     }
   };
+
+  // Auto-start capture when the sing window begins.
+  useEffect(() => {
+    if (state !== 'PLAYER_SINGING' || !canRecordLive || recording || processing) {
+      return;
+    }
+    void startLiveRecording();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per sing entry
+  }, [state, canRecordLive]);
+
+  // At 40s: stop+transcribe if recording, otherwise advance the FSM (demo path).
+  useEffect(() => {
+    if (
+      state !== 'PLAYER_SINGING' ||
+      singStartedAt == null ||
+      maxStopFiredRef.current
+    ) {
+      return;
+    }
+    if (now - singStartedAt < SING_MAX_MS) {
+      return;
+    }
+    maxStopFiredRef.current = true;
+    if (recording && !processing) {
+      void stopLiveRecording();
+    } else if (!recording && !processing) {
+      useGameStore.getState().autoStopSingMax(Date.now());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, state, singStartedAt, recording, processing]);
 
   if (state === 'IDLE') {
     return (
@@ -146,18 +215,53 @@ export default function PartyScreen() {
       <Text style={styles.caption}>{`State: ${state}`}</Text>
       <Text style={styles.scores}>{`Score A ${scores.A} · B ${scores.B}`}</Text>
 
-      {state === 'ROUND_START' || state === 'PLAYER_PREPARING' ? (
+      {state === 'PLAYER_PREPARING' && thinkDeadlineAt != null ? (
+        <TurnTimers
+          mode="think"
+          remainingMs={remainingMs(thinkDeadlineAt, now)}
+          onExpired={() => {
+            failThinkTimeout(Date.now());
+          }}
+        />
+      ) : null}
+
+      {state === 'PLAYER_COUNTDOWN' && countdownEndsAt != null ? (
+        <TurnTimers
+          mode="countdown"
+          remainingMs={remainingMs(countdownEndsAt, now)}
+        />
+      ) : null}
+
+      {shouldShowSingTimer({ state, processing }) && singStartedAt != null ? (
+        <TurnTimers
+          mode="sing"
+          elapsedMs={Math.max(0, now - singStartedAt)}
+          minMs={SING_MIN_MS}
+          maxMs={SING_MAX_MS}
+        />
+      ) : null}
+
+      {state === 'ROUND_START' ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            if (state === 'ROUND_START') {
-              beginPreparing();
-            }
-            startSinging();
+            beginThinkPhase(Date.now());
           }}
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>I'm ready</Text>
+        </Pressable>
+      ) : null}
+
+      {state === 'PLAYER_PREPARING' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            beginCountdown(Date.now());
+          }}
+          style={styles.primaryButton}
+        >
+          <Text style={styles.primaryButtonText}>Start singing</Text>
         </Pressable>
       ) : null}
 
@@ -171,25 +275,24 @@ export default function PartyScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
+                  if (!canStop) {
+                    return;
+                  }
                   void stopLiveRecording();
                 }}
                 style={[styles.primaryButton, styles.stopButton]}
-                disabled={processing}
+                disabled={processing || !canStop}
               >
                 <Text style={styles.primaryButtonText}>
-                  {processing ? 'Transcribing…' : 'Stop & transcribe'}
+                  {processing
+                    ? 'Transcribing…'
+                    : canStop
+                      ? 'Stop & transcribe'
+                      : 'Keep singing…'}
                 </Text>
               </Pressable>
             ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  void startLiveRecording();
-                }}
-                style={styles.primaryButton}
-              >
-                <Text style={styles.primaryButtonText}>Record & transcribe</Text>
-              </Pressable>
+              <Text style={styles.caption}>Recording starts automatically…</Text>
             )
           ) : (
             <Text style={styles.caption}>
@@ -228,10 +331,10 @@ export default function PartyScreen() {
       ) : null}
 
       {state === 'WORD_SELECTION' ? (
-        <PhraseSelector
+        <WordPicker
           words={transcriptWords}
-          onPassChallenge={({ phrase, multiplier }) => {
-            passChallengeToOpponent(phrase, multiplier);
+          onSelectWord={(word) => {
+            opponentSelectWord(word);
           }}
         />
       ) : null}
@@ -243,7 +346,9 @@ export default function PartyScreen() {
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={handOffToOpponent}
+            onPress={() => {
+              handOffToOpponent();
+            }}
             style={styles.primaryButton}
           >
             <Text style={styles.primaryButtonText}>Hand device to opponent</Text>

@@ -21,24 +21,6 @@ describe('<HomeScreen />', () => {
     expect(getByText(brand.tagline)).toBeTruthy();
   });
 
-  it('shows a Phase 7 STT review status line', async () => {
-    const { getByText } = await render(<HomeScreen />);
-
-    expect(getByText(/phase 7 stt review ready/i)).toBeTruthy();
-  });
-
-  it('links to Word Selection', async () => {
-    const { getByText } = await render(<HomeScreen />);
-
-    expect(getByText('Word Selection')).toBeTruthy();
-  });
-
-  it('shows the live game state from the store', async () => {
-    const { getByText } = await render(<HomeScreen />);
-
-    expect(getByText('State: IDLE')).toBeTruthy();
-  });
-
   it('offers Party Mode and Online Match entry points', async () => {
     const { getByText } = await render(<HomeScreen />);
 
@@ -50,5 +32,14 @@ describe('<HomeScreen />', () => {
     const { getByText } = await render(<HomeScreen />);
 
     expect(getByText('How to play')).toBeTruthy();
+  });
+
+  it('hides debug and ship-chrome from the store Home', async () => {
+    const { queryByText } = await render(<HomeScreen />);
+
+    expect(queryByText(/phase 10/i)).toBeNull();
+    expect(queryByText(/State:/i)).toBeNull();
+    expect(queryByText('Word Selection')).toBeNull();
+    expect(queryByText(/open state debug/i)).toBeNull();
   });
 });

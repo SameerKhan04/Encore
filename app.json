@@ -10,12 +10,14 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "ENCORE needs the microphone so you can sing your challenge."
+        "NSMicrophoneUsageDescription": "ENCORE needs the microphone so you can sing challenges and talk to your Online Match opponent."
       }
     },
     "android": {
+      "package": "com.encore.party",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -23,7 +25,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "RECORD_AUDIO",
-        "MODIFY_AUDIO_SETTINGS"
+        "MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
@@ -38,7 +44,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#0B0E14"
         }
       ],
       [
@@ -47,10 +53,31 @@
           "microphonePermission": "Allow ENCORE to access your microphone to capture singing performances."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "microphonePermission": "Allow ENCORE to use the microphone for Online Match voice so you can hear and talk to your opponent."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0B0E14",
+          "defaultChannel": "social"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7b32f7f7-e569-4d4f-b2ce-23d4a4645191"
+      }
+    },
+    "owner": "sameerk04"
   }
 }

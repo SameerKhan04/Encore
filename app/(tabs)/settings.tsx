@@ -1,9 +1,12 @@
 import Slider from '@react-native-community/slider';
 import { StyleSheet, Switch, Text, Pressable, View } from 'react-native';
 
+import appJson from '@/app.json';
 import { Screen } from '@/components/Screen';
 import { brand, colors, spacing, typography } from '@/constants/theme';
 import { usePreferencesStore } from '@/store/preferencesStore';
+
+const APP_VERSION = appJson.expo.version ?? '1.0.0';
 
 export default function SettingsScreen() {
   const hapticsEnabled = usePreferencesStore((s) => s.hapticsEnabled);
@@ -46,7 +49,7 @@ export default function SettingsScreen() {
         <Text style={styles.about}>
           {brand.name} — {brand.tagline}
         </Text>
-        <Text style={styles.caption}>Version 1.0.0 · Phase 3 UI shell</Text>
+        <Text style={styles.caption}>Version {APP_VERSION}</Text>
       </View>
 
       <Pressable
